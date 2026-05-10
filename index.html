@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Wanderlust | Live Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.07);
+            --glass-hover: rgba(255, 255, 255, 0.14);
+            --border: rgba(255, 255, 255, 0.15);
+            --accent: #00d2ff;
+            --home-accent: #00ff88;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.5) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, rgba(88, 28, 135, 0.5) 0, transparent 50%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            padding: 80px 20px 40px;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin: 0;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        header p {
+            color: #94a3b8;
+            margin-top: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            opacity: 0.9;
+        }
+
+        .grid-container {
+            width: 90%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding-bottom: 100px;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+        }
+
+        .card.local-card {
+            border: 1px solid var(--home-accent);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-5px);
+            border-color: var(--accent);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .badge {
+            font-size: 0.6rem;
+            background: var(--home-accent);
+            color: #0f172a;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 800;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            text-transform: uppercase;
+        }
+
+        .local-time {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-family: monospace;
+        }
+
+        .city { font-size: 1.25rem; font-weight: 600; }
+        .country-full { font-size: 0.7rem; text-transform: uppercase; color: #64748b; margin-bottom: 12px; letter-spacing: 1px; }
+        .temp { font-size: 2.8rem; font-weight: 300; margin-bottom: 8px; }
+        .condition { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 18px; text-transform: capitalize; }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 15px;
+        }
+
+        @media (max-width: 850px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 550px) { .grid-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Global Wanderlust</h1>
+        <p>Live Atmospheric Data & Local Time</p>
+    </header>
+
+    <div class="grid-container" id="weather-grid">
+        <!-- Live Data Loads Here -->
+    </div>
+
+    <script>
+        
+        
+        const regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+
+        // The Top 10 Destinations
+        const destinations = [
+            { city: 'Paris', country: 'France' },
+            { city: 'Tokyo', country: 'Japan' },
+            { city: 'Rome', country: 'Italy' },
+            { city: 'Barcelona', country: 'Spain' },
+            { city: 'New York', country: 'USA' },
+            { city: 'Bali', country: 'Indonesia' },
+            { city: 'Lisbon', country: 'Portugal' },
+            { city: 'Sydney', country: 'Australia' },
+            { city: 'Dubai', country: 'UAE' },
+            { city: 'Rio de Janeiro', country: 'Brazil' }
+        ];
+
+        function getLocalTime(timezoneOffset) {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const cityTime = new Date(utc + (1000 * timezoneOffset));
+            return cityTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        function createCardHTML(data, isLocal = false) {
+            const time = getLocalTime(data.timezone);
+            const fullName = regionNames.of(data.sys.country);
+
+            return `
+                <div class="card ${isLocal ? 'local-card' : ''}">
+                    ${isLocal ? '<span class="badge">Near You</span>' : ''}
+                    <div class="local-time">LMT ${time}</div>
+                    <div class="city">${data.name}</div>
+                    <div class="country-full">${fullName}</div>
+                    <div class="temp">${Math.round(data.main.temp)}°</div>
+                    <div class="condition">${data.weather[0].description}</div>
+                    <div class="stats">
+                        <span>💧 ${data.main.humidity}%</span>
+                        <span>💨 ${Math.round(data.wind.speed * 3.6)}km/h</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function initDashboard() {
+            const grid = document.getElementById('weather-grid');
+            grid.innerHTML = '';
+
+            // 1. Get Local Weather
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    try {
+                        // Fetching from your hidden function
+                        const res = await fetch(`/.netlify/functions/get-weather?lat=${latitude}&lon=${longitude}`);
+                        const localData = await res.json();
+                        if (localData.cod === 200) {
+                            grid.insertAdjacentHTML('afterbegin', createCardHTML(localData, true));
+                        }
+                    } catch (e) { console.error("Local fetch error", e); }
+                });
+            }
+
+            // 2. Load the Fixed Top 10
+            for (const loc of destinations) {
+                try {
+                    // Fetching from your hidden function
+                    const res = await fetch(`/.netlify/functions/get-weather?city=${loc.city}`);
+                    const data = await res.json();
+                    if (data.cod === 200) {
+                        grid.insertAdjacentHTML('beforeend', createCardHTML(data));
+                    }
+                } catch (e) { console.error(e); }
+            }
+        }
+        
+        initDashboard();
+        setInterval(initDashboard, 60000);
+    </script>
+</body>
+</html>
