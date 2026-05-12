@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); //node-fetch is dependency
 
 exports.handler = async (event) => {
   const { lat, lon, city } = event.queryStringParameters;
