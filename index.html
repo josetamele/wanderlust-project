@@ -121,6 +121,46 @@
             padding-top: 15px;
         }
 
+        .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0; top: 0;
+                width: 100%; height: 100%;
+                background-color: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(8px);
+            }
+
+            .modal-content {
+                background: var(--glass);
+                border: 1px solid var(--border);
+                margin: 15% auto;
+                padding: 30px;
+                width: 80%;
+                max-width: 500px;
+                border-radius: 20px;
+                color: white;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                position: relative;
+                animation: slideIn 0.3s ease-out;
+            }
+
+            @keyframes slideIn {
+                from { transform: translateY(-50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            .close-btn {
+                position: absolute;
+                right: 20px; top: 15px;
+                font-size: 28px;
+                cursor: pointer;
+                color: var(--accent);
+            }
+
+            .card { cursor: pointer; transition: transform 0.2s; }
+            .card:hover { transform: translateY(-5px); }
+
         @media (max-width: 850px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 550px) { .grid-container { grid-template-columns: 1fr; } }
     </style>
@@ -136,6 +176,7 @@
         <!-- Live Data Loads Here -->
     </div>
 
+    
     <script>
         
         
@@ -162,6 +203,29 @@
             return cityTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
+        // Keep this at the top level of your <script>
+        function openCityInfo(cityName) {
+            const modal = document.getElementById('city-modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-description');
+            
+            const key = cityName.toLowerCase().replace(/\s+/g, '-');
+            title.innerText = cityName;
+            desc.innerText = cityStories[key] || "A beautiful destination waiting to be explored!";
+            modal.style.display = "block";
+        }
+
+        // Global Close Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('city-modal');
+            const closeBtn = document.querySelector('.close-btn');
+            
+            if(closeBtn) closeBtn.onclick = () => modal.style.display = "none";
+            window.onclick = (event) => {
+                if (event.target == modal) modal.style.display = "none";
+            };
+        });
+
         // Add a parameter 'id' to your function
         function createCardHTML(data, isLocal = false) {
         const time = getLocalTime(data.timezone);
@@ -185,6 +249,20 @@
         `;
         }
 
+        const cityStories = {
+            "tokyo": "Tokyo is a neon-lit marvel where 400-year-old shrines sit beneath futuristic skyscrapers. Originally a small fishing village named Edo, it is now the world's most populous metropolitan area, blending the Bushido spirit with high-tech innovation.",
+            "paris": "Known as the 'City of Light,' Paris was the first European city to use gas street lamps. Beyond the Eiffel Tower, its history is etched into the limestone of the Latin Quarter, holding a legacy of revolutions, art movements, and world-class gastronomy.",
+            "new-york": "The 'Big Apple' is a global powerhouse of culture and finance. From its origins as a Dutch trading post to the skyscrapers of Manhattan, it remains a testament to the dreams of millions of immigrants who shaped its iconic skyline.",
+            "london": "A city defined by its resilience, London has survived the Great Fire and the Blitz. It is a living museum where Roman walls, medieval towers, and modern glass shards coexist along the historic banks of the River Thames.",
+            "dubai": "Rising from the Arabian Desert, Dubai transformed from a pearl-diving port into a global symbol of luxury. It is home to the world's tallest building and represents the pinnacle of 21st-century architectural ambition.",
+            "singapore": "The 'Garden City' is a unique island nation where tropical rainforests meet hyper-modern architecture. It is a cultural melting pot known for its strict harmony, legendary street food, and the futuristic Gardens by the Bay.",
+            "rome": "The 'Eternal City' is an open-air museum. With nearly 3,000 years of globally influential art, architecture, and culture on display, walking through Rome is a journey through the heart of the Roman Empire and the Renaissance.",
+            "sydney": "Built around one of the world's most stunning natural harbors, Sydney is Australia's oldest European settlement. It is famous for its sails-shaped Opera House and a lifestyle that perfectly balances urban grit with coastal serenity.",
+            "cape-town": "Nestled at the foot of Table Mountain, Cape Town is a city of breathtaking dramatic landscapes. It holds a complex history of maritime discovery and a vibrant, multicultural spirit that defines modern South Africa.",
+            "rio-de-janeiro": "Rio is the 'Marvelous City,' famed for its Christ the Redeemer statue and the energy of Carnival. It is a place where lush mountains meet the Atlantic, creating a rhythm of life found nowhere else on Earth."
+        };
+
+
         async function initDashboard() {
             const grid = document.getElementById('weather-grid');
 
@@ -206,7 +284,12 @@
                     } else {
                         grid.insertAdjacentHTML('beforeend', newHTML);
                     }
+
                 }
+                // manage the card click event
+                const cardElement = document.getElementById(cityId);
+                cardElement.onclick = () => openCityInfo(data.name);
+
             };
 
             // 1. Get Local Weather
@@ -234,5 +317,14 @@
         initDashboard();
         setInterval(initDashboard, 60000);
     </script>
+
+    <div id="city-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-title">City Name</h2>
+            <p id="modal-description">Description goes here...</p>
+        </div>
+    </div>
+
 </body>
 </html>
