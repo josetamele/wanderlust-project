@@ -71,6 +71,7 @@
             text-align: center;
             transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             position: relative;
+            transition: opacity 0.5s ease-in-out;
         }
 
         .card.local-card {
@@ -161,41 +162,61 @@
             return cityTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
+        // Add a parameter 'id' to your function
         function createCardHTML(data, isLocal = false) {
-            const time = getLocalTime(data.timezone);
-            const fullName = regionNames.of(data.sys.country);
+        const time = getLocalTime(data.timezone);
+        const fullName = regionNames.of(data.sys.country);
+        // Sanitize city name for use as an ID (e.g., "New York" -> "city-new-york")
+        const cityId = `city-${data.name.toLowerCase().replace(/\s+/g, '-')}`;
 
-            return `
-                <div class="card ${isLocal ? 'local-card' : ''}">
-                    ${isLocal ? '<span class="badge">Near You</span>' : ''}
-                    <div class="local-time">LMT ${time}</div>
-                    <div class="city">${data.name}</div>
-                    <div class="country-full">${fullName}</div>
-                    <div class="temp">${Math.round(data.main.temp)}°</div>
-                    <div class="condition">${data.weather[0].description}</div>
-                    <div class="stats">
-                        <span>💧 ${data.main.humidity}%</span>
-                        <span>💨 ${Math.round(data.wind.speed * 3.6)}km/h</span>
-                    </div>
+        return `
+            <div class="card ${isLocal ? 'local-card' : ''}" id="${cityId}">
+                ${isLocal ? '<span class="badge">Near You</span>' : ''}
+                <div class="local-time">LMT ${time}</div>
+                <div class="city">${data.name}</div>
+                <div class="country-full">${fullName}</div>
+                <div class="temp">${Math.round(data.main.temp)}°</div>
+                <div class="condition">${data.weather[0].description}</div>
+                <div class="stats">
+                    <span>💧 ${data.main.humidity}%</span>
+                    <span>💨 ${Math.round(data.wind.speed * 3.6)}km/h</span>
                 </div>
-            `;
+            </div>
+        `;
         }
 
         async function initDashboard() {
             const grid = document.getElementById('weather-grid');
-            grid.innerHTML = '';
+
+            // Helper function to handle the "In-Place" update
+            const updateOrAddCard = (data, isLocal = false) => {
+                if (data.cod !== 200) return;
+                
+                const cityId = `city-${data.name.toLowerCase().replace(/\s+/g, '-')}`;
+                const existingCard = document.getElementById(cityId);
+                const newHTML = createCardHTML(data, isLocal);
+
+                if (existingCard) {
+                    // Replace the old card with the new one without moving it
+                    existingCard.outerHTML = newHTML;
+                } else {
+                    // If it's brand new, add it to the grid
+                    if (isLocal) {
+                        grid.insertAdjacentHTML('afterbegin', newHTML);
+                    } else {
+                        grid.insertAdjacentHTML('beforeend', newHTML);
+                    }
+                }
+            };
 
             // 1. Get Local Weather
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     const { latitude, longitude } = position.coords;
                     try {
-                        // Fetching from your hidden function
                         const res = await fetch(`/.netlify/functions/get-weather?lat=${latitude}&lon=${longitude}`);
                         const localData = await res.json();
-                        if (localData.cod === 200) {
-                            grid.insertAdjacentHTML('afterbegin', createCardHTML(localData, true));
-                        }
+                        updateOrAddCard(localData, true);
                     } catch (e) { console.error("Local fetch error", e); }
                 });
             }
@@ -203,12 +224,9 @@
             // 2. Load the Fixed Top 10
             for (const loc of destinations) {
                 try {
-                    // Fetching from your hidden function
                     const res = await fetch(`/.netlify/functions/get-weather?city=${loc.city}`);
                     const data = await res.json();
-                    if (data.cod === 200) {
-                        grid.insertAdjacentHTML('beforeend', createCardHTML(data));
-                    }
+                    updateOrAddCard(data);
                 } catch (e) { console.error(e); }
             }
         }
